@@ -29,11 +29,11 @@ def get_medicine(medicine_id: int,db: Session = Depends(get_db)):
         raise HTTPException(status_code=404,detail=f"Medicine with id {medicine_id} not found")
     return medicine
 
-@app.post("/medicine",response_model=MedicineResponse)
+@app.post("/medicine")
 def create_medicine(medicine: MedicineCreate,db: Session = Depends(get_db)):
     return crud.create_medicine(medicine,db)
 
-@app.put("/medicine/{medicine_id}",response_model=MedicineResponse)
+@app.put("/medicine/{medicine_id}")
 def update_medicine(medicine_id: int,medicine: MedicineUpdate,db: Session = Depends(get_db)):
     updated = crud.update_medicine(medicine_id,medicine,db)
     if not updated:
