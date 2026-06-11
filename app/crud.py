@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.anomaly import detect_anomaly
 from app.models import MedicineInventory
 from app.schema import MedicineCreate, MedicineUpdate
+from ml.predict import predict_medicine
 
 
 # CREATE
@@ -25,7 +25,9 @@ def create_medicine(
 def get_all_medicines(
     db: Session
 ):
-    return db.query(MedicineInventory).all()
+    return db.query(
+        MedicineInventory
+    ).all()
 
 
 # READ ONE
@@ -35,7 +37,9 @@ def get_medicine(
 ):
     return (
         db.query(MedicineInventory)
-        .filter(MedicineInventory.id == medicine_id)
+        .filter(
+            MedicineInventory.id == medicine_id
+        )
         .first()
     )
 
@@ -48,7 +52,9 @@ def update_medicine(
 ):
     medicine = (
         db.query(MedicineInventory)
-        .filter(MedicineInventory.id == medicine_id)
+        .filter(
+            MedicineInventory.id == medicine_id
+        )
         .first()
     )
 
@@ -60,7 +66,11 @@ def update_medicine(
     )
 
     for field, value in update_data.items():
-        setattr(medicine, field, value)
+        setattr(
+            medicine,
+            field,
+            value
+        )
 
     db.commit()
     db.refresh(medicine)
@@ -75,7 +85,9 @@ def delete_medicine(
 ):
     medicine = (
         db.query(MedicineInventory)
-        .filter(MedicineInventory.id == medicine_id)
+        .filter(
+            MedicineInventory.id == medicine_id
+        )
         .first()
     )
 
@@ -89,74 +101,94 @@ def delete_medicine(
         "message": f"Medicine with id {medicine_id} deleted successfully"
     }
 
-def get_anomalies(db: Session):
 
-    medicines = db.query(MedicineInventory).all()
+# GET ALL ANOMALIES
+def get_anomalies(
+    db: Session
+):
+    medicines = db.query(
+        MedicineInventory
+    ).all()
 
     anomalies = []
 
     for medicine in medicines:
 
-        if detect_anomaly(medicine.medicine_name):
+        result = predict_medicine(
+            medicine.medicine_name
+        )
+
+        if result["prediction"] == "Not Medicine":
 
             anomalies.append({
                 "id": medicine.id,
                 "medicine_name": medicine.medicine_name,
                 "quantity": medicine.quantity,
-                "prediction": "Not Medicine"
+                "prediction": result["prediction"],
+                "confidence": result["confidence"]
             })
 
     return anomalies
 
+
+# GET ANOMALY BY ID
 def get_anomaly_by_id(
     medicine_id: int,
     db: Session
 ):
-
     medicine = (
         db.query(MedicineInventory)
-        .filter(MedicineInventory.id == medicine_id)
+        .filter(
+            MedicineInventory.id == medicine_id
+        )
         .first()
     )
 
     if not medicine:
         return None
 
-    prediction = "Medicine"
-
-    if detect_anomaly(medicine.medicine_name):
-        prediction = "Not Medicine"
+    result = predict_medicine(
+        medicine.medicine_name
+    )
 
     return {
         "id": medicine.id,
         "medicine_name": medicine.medicine_name,
         "quantity": medicine.quantity,
-        "prediction": prediction
+        "prediction": result["prediction"],
+        "confidence": result["confidence"]
     }
 
+
+# FILTER ANOMALIES
 def filter_anomalies(
     status: str,
     db: Session
 ):
-
-    medicines = db.query(MedicineInventory).all()
+    medicines = db.query(
+        MedicineInventory
+    ).all()
 
     results = []
 
     for medicine in medicines:
 
-        prediction = "Medicine"
+        result = predict_medicine(
+            medicine.medicine_name
+        )
 
-        if detect_anomaly(medicine.medicine_name):
-            prediction = "Not Medicine"
-
-        if prediction.lower() == status.lower():
+        if (
+            result["prediction"].lower()
+            ==
+            status.lower()
+        ):
 
             results.append({
                 "id": medicine.id,
                 "medicine_name": medicine.medicine_name,
                 "quantity": medicine.quantity,
-                "prediction": prediction
+                "prediction": result["prediction"],
+                "confidence": result["confidence"]
             })
 
     return results
