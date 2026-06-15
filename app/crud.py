@@ -2,7 +2,9 @@ from sqlalchemy.orm import Session
 from app.models import MedicineInventory
 from app.schema import MedicineCreate, MedicineUpdate
 from ml.predict import predict_medicine
-
+from app.models import CleanInventory
+from app.schema import CleaningSummary
+from ml.predict import predict_medicine
 
 # CREATE
 def create_medicine(medicine: MedicineCreate,db: Session):
@@ -116,3 +118,51 @@ def filter_anomalies(status: str,db: Session):
             })
 
     return results
+def clean_inventory_data(db: Session):
+
+    db.query(CleanInventory).delete()
+    db.commit()
+
+    medicines = db.query(MedicineInventory).all()
+
+    copied = 0
+    ignored = 0
+
+    for medicine in medicines:
+
+        result = predict_medicine(
+            medicine.medicine_name
+        )
+
+        if result["prediction"] == "Not Medicine":
+            ignored += 1
+            continue
+
+        clean_row = CleanInventory(
+            source_id=medicine.id,
+            medicine_name=medicine.medicine_name,
+            stock_quantity=medicine.quantity,
+            ml_label=result["prediction"],
+            confidence=result["confidence"]
+        )
+
+        db.add(clean_row)
+        copied += 1
+
+    db.commit()
+
+    return {
+        "total_processed": len(medicines),
+        "copied": copied,
+        "ignored": ignored
+    }
+
+
+def get_clean_inventory(db: Session):
+
+    records = db.query(CleanInventory).all()
+
+    return {
+        "total": len(records),
+        "records": records
+    }

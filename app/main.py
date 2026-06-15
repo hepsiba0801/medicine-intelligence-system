@@ -10,6 +10,10 @@ from app import crud
 from fastapi import FastAPI, Depends, HTTPException
 from app.schema import MedicineUpdate
 from fastapi import Query
+from app.schema import (
+    CleaningSummary,
+    CleanInventoryListResponse
+)
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Medicine Inventory API")
@@ -62,3 +66,10 @@ def get_anomaly_by_id(medicine_id: int,db: Session = Depends(get_db)):
         raise HTTPException(status_code=404,detail=f"Medicine with id {medicine_id} not found")
     return result
 
+@app.post("/inventory/clean")
+def run_cleaning_pipeline(db: Session = Depends(get_db)):
+    return crud.clean_inventory_data(db)
+
+@app.get("/clean-inventory",response_model=CleanInventoryListResponse)
+def get_clean_inventory(db: Session = Depends(get_db)):
+    return crud.get_clean_inventory(db)
