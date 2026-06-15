@@ -5,6 +5,8 @@ from ml.predict import predict_medicine
 from app.models import CleanInventory
 from app.schema import CleaningSummary
 from ml.predict import predict_medicine
+from ml.predict_category import predict_category
+from app.models import CleanInventory
 
 # CREATE
 def create_medicine(medicine: MedicineCreate,db: Session):
@@ -100,8 +102,6 @@ def get_anomaly_by_id(medicine_id: int,db: Session):
         "confidence": result["confidence"]
     }
 
-
-# FILTER ANOMALIES
 def filter_anomalies(status: str,db: Session):
     medicines = db.query(MedicineInventory).all()
     results = []
@@ -118,6 +118,7 @@ def filter_anomalies(status: str,db: Session):
             })
 
     return results
+
 def clean_inventory_data(db: Session):
 
     db.query(CleanInventory).delete()
@@ -165,4 +166,30 @@ def get_clean_inventory(db: Session):
     return {
         "total": len(records),
         "records": records
+    }
+def classify_inventory(db: Session):
+
+    medicines = db.query(CleanInventory).all()
+
+    processed = 0
+
+    for medicine in medicines:
+
+        result = predict_category(
+            medicine.medicine_name
+        )
+
+        medicine.classification = result["category"]
+
+        medicine.classification_confidence = (
+            result["confidence"]
+        )
+
+        processed += 1
+
+    db.commit()
+
+    return {
+        "processed": processed,
+        "classified": processed
     }

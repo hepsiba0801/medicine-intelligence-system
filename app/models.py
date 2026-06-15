@@ -20,4 +20,5 @@ class CleanInventory(Base):
     medicine_name = Column(String(255), nullable=False)
     stock_quantity = Column(Integer, nullable=False)
     ml_label = Column(String(50), nullable=False)
-    confidence = Column(Float, nullable=False)
+    classification = Column(String(100))
+    classification_confidence = Column(Float)
