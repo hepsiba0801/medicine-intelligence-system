@@ -19,22 +19,44 @@ CATEGORIES = [
 ]
 
 
-def classify_medicine(medicine_name: str):
+def classify_item(item_name: str):
 
     prompt = f"""
-Classify the medicine into exactly one category.
+You are a pharmaceutical inventory validator.
 
-Allowed categories:
+Task:
+
+1. Determine if the item is a medicine.
+2. If it is a medicine:
+   - Correct any spelling mistakes.
+   - Classify it into EXACTLY ONE category from:
+
 {", ".join(CATEGORIES)}
 
-Medicine:
-{medicine_name}
+3. If it is NOT a medicine:
+   - Explain why.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON.
+
+Medicine Name:
+{item_name}
+
+Examples:
 
 {{
-  "category": "Antibiotic",
-  "confidence": 0.98
+  "is_medicine": true,
+  "suggested_name": "Paracetamol",
+  "category": "Analgesic",
+  "confidence": 0.98,
+  "reason": null
+}}
+
+{{
+  "is_medicine": false,
+  "suggested_name": "Laptop",
+  "category": null,
+  "confidence": 1.0,
+  "reason": "Laptop is an electronic device and not a medicine."
 }}
 """
 

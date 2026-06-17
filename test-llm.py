@@ -1,8 +1,6 @@
-from llm.classifier import classify_medicine
+from llm.classifier import classify_item
 
-print(classify_medicine("Amoxicillin"))
-print(classify_medicine("Metformin"))
-print(classify_medicine("Omeprazole"))
-print(classify_medicine("Acyclovir"))
-print(classify_medicine("Fluconazole"))
-
+print(classify_item("Amoxicillin"))
+print(classify_item("Paracetmol"))
+print(classify_item("Laptop"))
+print(classify_item("Coffee Mug"))
