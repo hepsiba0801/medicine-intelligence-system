@@ -74,6 +74,3 @@ def run_cleaning_pipeline(db: Session = Depends(get_db)):
 def get_clean_inventory(db: Session = Depends(get_db)):
     return crud.get_clean_inventory(db)
 
-@app.post("/inventory/classify")
-def classify_inventory(db: Session = Depends(get_db)):
-    return crud.classify_inventory(db)
