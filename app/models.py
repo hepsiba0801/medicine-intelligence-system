@@ -13,12 +13,14 @@ class MedicineInventory(Base):
     medicine_name = Column(String(255),nullable=False,index=True)
     quantity = Column(Integer,nullable=False)
 
+
 class CleanInventory(Base):
     __tablename__ = "clean_inventory"
     id = Column(Integer, primary_key=True, index=True)
-    source_id = Column(Integer, nullable=False, index=True)
-    medicine_name = Column(String(255), nullable=False)
-    stock_quantity = Column(Integer, nullable=False)
-    ml_label = Column(String(50), nullable=False)
+    source_id = Column(Integer,nullable=False,index=True)
+    medicine_name = Column(String(255),nullable=False)
+    suggested_name = Column(String(255))
+    stock_quantity = Column(Integer,nullable=False)
     classification = Column(String(100))
     classification_confidence = Column(Float)
+    
