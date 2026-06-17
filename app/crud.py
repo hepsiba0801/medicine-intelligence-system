@@ -10,9 +10,8 @@ from app.schema import (
     MedicineUpdate,
     CleaningSummary
 )
+from llm.classifier import classify_item
 
-from ml.predict import predict_medicine
-from llm.classifier import classify_medicine
 # CREATE
 def create_medicine(medicine: MedicineCreate, db: Session):
 
@@ -95,98 +94,29 @@ def delete_medicine(
         "message": "Deleted successfully"
     }
 
-
-# GET ALL ANOMALIES
-def get_anomalies(db: Session):
-    medicines = db.query(MedicineInventory).all()
-    anomalies = []
-    for medicine in medicines:
-        result = predict_medicine(medicine.medicine_name)
-        if result["prediction"] in ["Suspicious", "Not Medicine"]:
-            anomalies.append({
-                "id": medicine.id,
-                "medicine_name": medicine.medicine_name,
-                "quantity": medicine.quantity,
-                "prediction": result["prediction"],
-                "confidence": result["confidence"]
-            })
-
-    return anomalies
-
-
-# GET ANOMALY BY ID
-def get_anomaly_by_id(medicine_id: int,db: Session):
-    medicine = (db.query(MedicineInventory).filter(MedicineInventory.id == medicine_id).first())
-
-    if not medicine:
-        return None
-    result = predict_medicine(medicine.medicine_name)
-    return {
-        "id": medicine.id,
-        "medicine_name": medicine.medicine_name,
-        "quantity": medicine.quantity,
-        "prediction": result["prediction"],
-        "confidence": result["confidence"]
-    }
-
-def filter_anomalies(status: str,db: Session):
-    medicines = db.query(MedicineInventory).all()
-    results = []
-
-    for medicine in medicines:
-        result = predict_medicine(medicine.medicine_name)
-        if (result["prediction"].lower()==status.lower()):
-            results.append({
-                "id": medicine.id,
-                "medicine_name": medicine.medicine_name,
-                "quantity": medicine.quantity,
-                "prediction": result["prediction"],
-                "confidence": result["confidence"]
-            })
-
-    return results
-
-def clean_inventory_data(
-    db: Session
-):
-
+def clean_inventory_data(db: Session):
     db.query(CleanInventory).delete()
     db.commit()
-
-    medicines = (
-        db.query(MedicineInventory)
-        .all()
-    )
-
+    medicines = db.query(MedicineInventory).all()
     copied = 0
     ignored = 0
-
     for medicine in medicines:
 
-        result = predict_medicine(
-            medicine.medicine_name
-        )
-
-        if result["prediction"] == "Not Medicine":
+        result = classify_item(medicine.medicine_name)
+        if not result["is_medicine"]:
             ignored += 1
             continue
-
-        category_result = classify_medicine(
-            medicine.medicine_name
-        )
 
         clean_row = CleanInventory(
             source_id=medicine.id,
             medicine_name=medicine.medicine_name,
+            suggested_name=result["suggested_name"],
             stock_quantity=medicine.quantity,
-            ml_label=result["prediction"],
-            classification=category_result["category"],
-            classification_confidence=category_result["confidence"]
+            classification=result["category"],
+            classification_confidence=result["confidence"],
         )
-
         db.add(clean_row)
         copied += 1
-
     db.commit()
 
     return {
@@ -195,15 +125,8 @@ def clean_inventory_data(
         "ignored": ignored
     }
 
-def get_clean_inventory(
-    db: Session
-):
-
-    records = (
-        db.query(CleanInventory)
-        .all()
-    )
-
+def get_clean_inventory(db: Session):
+    records = (db.query(CleanInventory).all())
     return {
         "total": len(records),
         "records": records

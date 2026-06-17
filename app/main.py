@@ -50,22 +50,7 @@ def delete_medicine(medicine_id: int,db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404,detail=f"Medicine with id {medicine_id} not found")
     return deleted
-
-@app.get("/anomalies")
-def get_anomalies(db: Session = Depends(get_db)):
-    return crud.get_anomalies(db)
-
-@app.get("/anomalies/filter")
-def filter_anomalies(status: str = Query(...),db: Session = Depends(get_db)):
-    return crud.filter_anomalies(status,db)
-
-@app.get("/anomalies/{medicine_id}")
-def get_anomaly_by_id(medicine_id: int,db: Session = Depends(get_db)):
-    result = crud.get_anomaly_by_id(medicine_id,db)
-    if not result:
-        raise HTTPException(status_code=404,detail=f"Medicine with id {medicine_id} not found")
-    return result
-
+    
 @app.post("/inventory/clean")
 def run_cleaning_pipeline(db: Session = Depends(get_db)):
     return crud.clean_inventory_data(db)
